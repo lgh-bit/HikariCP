@@ -226,13 +226,16 @@ public abstract class ProxyConnection implements Connection
    public final void close() throws SQLException
    {
       // Closing statements can cause connection eviction, so this must run before the conditional below
+      // 清理Statement，这里使用FastList
       closeStatements();
 
       if (delegate != ClosedConnection.CLOSED_CONNECTION) {
+         // 取消连接泄漏检测
          leakTask.cancel();
 
          try {
             if (isCommitStateDirty && !isAutoCommit) {
+               //清理连接没有提交的事务
                delegate.rollback();
                lastAccess = currentTime();
                LOGGER.debug("{} - Executed rollback on connection {} due to dirty commit state on close().", poolEntry.getPoolName(), delegate);
@@ -252,7 +255,9 @@ public abstract class ProxyConnection implements Connection
             }
          }
          finally {
+            //标记连接不可用
             delegate = ClosedConnection.CLOSED_CONNECTION;
+            // 回收
             poolEntry.recycle(lastAccess);
          }
       }

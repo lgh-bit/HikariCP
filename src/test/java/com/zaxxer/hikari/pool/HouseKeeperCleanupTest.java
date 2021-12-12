@@ -60,6 +60,7 @@ public class HouseKeeperCleanupTest
       config.setConnectionTimeout(2500);
       config.setDataSourceClassName("com.zaxxer.hikari.mocks.StubDataSource");
       config.setScheduledExecutor(executor);
+      config.setPoolName("HouseKeeperCleanup");
 
       HikariConfig config2 = newHikariConfig();
       config.copyStateTo(config2);

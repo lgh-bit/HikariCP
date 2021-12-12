@@ -44,7 +44,7 @@ public final class JavassistProxyFactory
    private static String genDirectory = "";
 
    public static void main(String... args) throws Exception {
-      classPool = new ClassPool();
+      classPool = new ClassPool(); //获取线程池
       classPool.importPackage("java.sql");
       classPool.appendClassPath(new LoaderClassPath(JavassistProxyFactory.class.getClassLoader()));
 

@@ -1,0 +1,7 @@
+@startuml
+
+ProxyConnection -> PoolEntry: close
+PoolEntry -> HikariPool: recycle
+HikariPool -> ConcurrentBag: requite
+
+@enduml

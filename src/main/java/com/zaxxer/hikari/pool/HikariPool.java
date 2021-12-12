@@ -163,7 +163,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
 
    /**
     * Get a connection from the pool, or timeout after the specified number of milliseconds.
-    *
+    *x
     * @param hardTimeout the maximum time to wait for a connection from the pool
     * @return a java.sql.Connection instance
     * @throws SQLException thrown if a timeout occurs trying to obtain a connection
@@ -182,7 +182,8 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
             }
 
             final long now = currentTime();
-            if (poolEntry.isMarkedEvicted() || (elapsedMillis(poolEntry.lastAccessed, now) > aliveBypassWindowMs && !isConnectionAlive(poolEntry.connection))) {
+            if (poolEntry.isMarkedEvicted() || (elapsedMillis(poolEntry.lastAccessed, now) > aliveBypassWindowMs
+               && !isConnectionAlive(poolEntry.connection))) {
                closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? EVICTED_CONNECTION_MESSAGE : DEAD_CONNECTION_MESSAGE);
                timeout = hardTimeout - elapsedMillis(startTime);
             }
@@ -411,13 +412,20 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
     *
     * @param prefix an optional prefix to prepend the log message
     */
-   void logPoolState(String... prefix)
+   public void logPoolState(String... prefix)
    {
       if (logger.isDebugEnabled()) {
          logger.debug("{} - {}stats (total={}, active={}, idle={}, waiting={})",
                       poolName, (prefix.length > 0 ? prefix[0] : ""),
                       getTotalConnections(), getActiveConnections(), getIdleConnections(), getThreadsAwaitingConnection());
       }
+   }
+
+   public void logPoolStateInfo(String... prefix)
+   {
+      logger.info("{} - {}stats (total={}, active={}, idle={}, waiting={})",
+         poolName, (prefix.length > 0 ? prefix[0] : ""),
+         getTotalConnections(), getActiveConnections(), getIdleConnections(), getThreadsAwaitingConnection());
    }
 
    /**
@@ -470,13 +478,16 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
    private PoolEntry createPoolEntry()
    {
       try {
+         //获取一个新连接，包装为PoolEntry
          final PoolEntry poolEntry = newPoolEntry();
 
          final long maxLifetime = config.getMaxLifetime();
          if (maxLifetime > 0) {
             // variance up to 2.5% of the maxlifetime
+            // 防止雪崩(使用缓存也类似) ,对每个线程的失效时间都减少一点buffer,防止同时失效
             final long variance = maxLifetime > 10_000 ? ThreadLocalRandom.current().nextLong( maxLifetime / 40 ) : 0;
             final long lifetime = maxLifetime - variance;
+            //使用延迟任务来实现
             poolEntry.setFutureEol(houseKeepingExecutorService.schedule(
                () -> {
                   if (softEvictConnection(poolEntry, "(connection has passed maxLifetime)", false /* not owner */)) {
@@ -723,6 +734,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
       public Boolean call()
       {
          long sleepBackoff = 250L;
+         //线程池是正常状态，且有等待的线程，会一直创建，即一个PoolEntryCreator可能会创建多个连接
          while (poolState == POOL_NORMAL && shouldCreateAnotherConnection()) {
             final PoolEntry poolEntry = createPoolEntry();
             if (poolEntry != null) {
@@ -743,6 +755,8 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
       }
 
       /**
+       * 硬性限制，连接数不能超过配置的总连接数
+       * 没达到最大连接数：当有线程等待获取连接时或者当现有连接小于minIdle时可以创建
        * We only create connections if we need another idle connection or have threads still waiting
        * for a new connection.  Otherwise we bail out of the request to create.
        *
@@ -775,16 +789,20 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
             final long now = currentTime();
 
             // Detect retrograde time, allowing +128ms as per NTP spec.
+            //时间倒退
             if (plusMillis(now, 128) < plusMillis(previous, housekeepingPeriodMs)) {
-               logger.warn("{} - Retrograde clock change detected (housekeeper delta={}), soft-evicting connections from pool.",
-                           poolName, elapsedDisplayString(previous, now));
+               logger.warn("{} - Retrograde clock change detected (housekeeper delta={}), soft-evicting connections from pool.previous:{},now:{}",
+                           poolName, elapsedDisplayString(previous, now), previous, now);
+               //矫正
                previous = now;
+               //尝试关闭所有连接；为什么关闭所有连接？
                softEvictConnections();
                return;
             }
+            // 时间超前了(往前调整了) 只是加速连接的回收时间，不影响
             else if (now > plusMillis(previous, (3 * housekeepingPeriodMs) / 2)) {
                // No point evicting for forward clock motion, this merely accelerates connection retirement anyway
-               logger.warn("{} - Thread starvation or clock leap detected (housekeeper delta={}).", poolName, elapsedDisplayString(previous, now));
+               logger.warn("{} - Thread starvation or clock leap detected (housekeeper delta={}). previous:{},now:{}", poolName, elapsedDisplayString(previous, now), previous, now);
             }
 
             previous = now;
@@ -797,6 +815,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
                final List<PoolEntry> notInUse = connectionBag.values(STATE_NOT_IN_USE);
                int toRemove = notInUse.size() - config.getMinimumIdle();
                for (PoolEntry entry : notInUse) {
+                  // 当前连接数大于minIdle，且连接空闲时间
                   if (toRemove > 0 && elapsedMillis(entry.lastAccessed, now) > idleTimeout && connectionBag.reserve(entry)) {
                      closeConnection(entry, "(connection has passed idleTimeout)");
                      toRemove--;

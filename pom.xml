@@ -76,6 +76,11 @@
 
    <dependencies>
       <dependency>
+         <groupId>mysql</groupId>
+         <artifactId>mysql-connector-java</artifactId>
+         <version>5.1.45</version>
+      </dependency>
+      <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-api</artifactId>
          <version>${slf4j.version}</version>
@@ -448,9 +453,9 @@
                <version>2.22.1</version>
                <configuration>
                   <!-- Sets the VM argument line used when unit tests are run. -->
-                  <argLine>${surefireArgLine} ${sureFireOptions9}</argLine>
+                  <argLine> ${sureFireOptions9}</argLine>
                   <!-- Skips unit tests if the value of skip.unit.tests property is true -->
-                  <skipTests>${skip.unit.tests}</skipTests>
+                  <skipTests>true</skipTests>
                   <reuseForks>${sureFireForks9}</reuseForks>
                </configuration>
             </plugin>

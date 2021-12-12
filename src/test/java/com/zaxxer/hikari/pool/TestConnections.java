@@ -45,9 +45,9 @@ public class TestConnections
    @Before
    public void before()
    {
-      setSlf4jTargetStream(HikariPool.class, System.err);
-      setSlf4jLogLevel(HikariPool.class, Level.DEBUG);
-      setSlf4jLogLevel(PoolBase.class, Level.DEBUG);
+//      setSlf4jTargetStream(HikariPool.class, System.err);
+//      setSlf4jLogLevel(HikariPool.class, Level.DEBUG);
+//      setSlf4jLogLevel(PoolBase.class, Level.DEBUG);
    }
 
    @After

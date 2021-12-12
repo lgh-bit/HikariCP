@@ -1,0 +1,10 @@
+@startuml
+HikariDataSource -> HikariPool: getConnection
+HikariPool -> ConcurrentBag: borrow
+ConcurrentBag --> HikariPool: PoolEntry
+
+HikariPool -> ProxyFactory: createProxyConnection
+ProxyFactory --> HikariPool: ProxyConnection
+HikariPool --> HikariDataSource: Connection
+
+@enduml

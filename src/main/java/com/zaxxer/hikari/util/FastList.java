@@ -93,7 +93,7 @@ public final class FastList<T> implements List<T>, RandomAccess, Serializable
 
    /**
     * Get the element at the specified index.
-    *
+    * 没有做范围检查
     * @param index the index of the element to get
     * @return the element, or ArrayIndexOutOfBounds is thrown if the index is invalid
     */
@@ -118,6 +118,7 @@ public final class FastList<T> implements List<T>, RandomAccess, Serializable
    }
 
    /**
+    * 从后往前遍历，类似栈使用
     * This remove method is most efficient when the element being removed
     * is the last element.  Equality is identity based, not equals() based.
     * Only the first matching element is removed.

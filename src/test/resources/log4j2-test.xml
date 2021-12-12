@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="OFF">
+<configuration status="info">
   <appenders>
-    <Console name="Console" target="SYSTEM_ERR">
-      <PatternLayout pattern="%6r [seq%5sn] [%-26.26t] %-5level %-20c{1} - %msg%n" />
+    <Console name="console" target="SYSTEM_OUT">
+       <PatternLayout>
+          <pattern>%style{%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}}}{cyan} %highlight{${LOG_LEVEL_PATTERN:-%5p}}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=green, DEBUG=green bold, TRACE=blue} %style{%processId : %threadId}{magenta} %highlight{[%15.15t]} %style{%-40.40C{1.}}{cyan}%L : %m%n</pattern>
+       </PatternLayout>
     </Console>
   </appenders>
   <Loggers>
-    <Root level="info">
-      <AppenderRef ref="Console" />
-    </Root>
+     <root level="debug" additivity="true" includeLocation="true">
+        <AppenderRef ref="console" level="debug" />
+     </root>
   </Loggers>
 </configuration>

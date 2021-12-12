@@ -16,6 +16,7 @@
 
 package com.zaxxer.hikari.db;
 
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.pool.HikariPool;
@@ -24,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -41,28 +43,34 @@ import static org.junit.Assert.assertNotNull;
  */
 public class BasicPoolTest
 {
+
    @Before
    public void setup() throws SQLException
    {
        HikariConfig config = newHikariConfig();
+       config.setJdbcUrl("jdbc:mysql://127.0.01:3306/HikariCPTest?autoReconnect=true&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false");
        config.setMinimumIdle(1);
        config.setMaximumPoolSize(2);
        config.setConnectionTestQuery("SELECT 1");
-       config.setDataSourceClassName("org.h2.jdbcx.JdbcDataSource");
-       config.addDataSourceProperty("url", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1");
+       //config.setDataSourceClassName("com.mysql.jdbc.Driver");
+       //config.addDataSourceProperty("jdbcUrl", "jdbc:mysql://127.0.01:3306/skynet-prod-2019-10-10-test?autoReconnect=true&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false");
+       config.setUsername("root");
+       config.setPassword("root");
 
        try (HikariDataSource ds = new HikariDataSource(config);
             Connection conn = ds.getConnection();
             Statement stmt = conn.createStatement()) {
-          stmt.executeUpdate("DROP TABLE IF EXISTS basic_pool_test");
-          stmt.executeUpdate("CREATE TABLE basic_pool_test ("
-                            + "id INTEGER NOT NULL IDENTITY PRIMARY KEY, "
-                            + "timestamp TIMESTAMP, "
-                            + "string VARCHAR(128), "
-                            + "string_from_number NUMERIC "
+            stmt.executeUpdate("DROP TABLE IF EXISTS basic_pool_test");
+            stmt.executeUpdate("CREATE TABLE basic_pool_test ("
+                            + "id INTEGER NOT NULL AUTO_INCREMENT, "
+                            + "timestamp datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                            + "string varchar(48) NOT NULL DEFAULT '\"\"', "
+                            + "string_from_number int(11) NOT NULL DEFAULT '0',"
+                            + "PRIMARY KEY (`id`)"
                             + ")");
        }
    }
+
 
    @Test
    public void testIdleTimeout() throws InterruptedException, SQLException
@@ -71,8 +79,14 @@ public class BasicPoolTest
       config.setMinimumIdle(5);
       config.setMaximumPoolSize(10);
       config.setConnectionTestQuery("SELECT 1");
-      config.setDataSourceClassName("org.h2.jdbcx.JdbcDataSource");
-      config.addDataSourceProperty("url", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1");
+     // config.setDataSourceClassName("org.h2.jdbcx.JdbcDataSource");
+      //config.addDataSourceProperty("url", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1");
+
+     // config.setDataSourceClassName("com.mysql.jdbc.Driver");
+      //config.addDataSourceProperty("url", "url: jdbc:mysql://127.0.01:3306/skynet-prod-2019-10-10-test?autoReconnect=true&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false");
+      config.setJdbcUrl("jdbc:mysql://127.0.01:3306/HikariCPTest?autoReconnect=true&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false");
+      config.setUsername("root");
+      config.setPassword("root");
 
       System.setProperty("com.zaxxer.hikari.housekeeping.periodMs", "1000");
 

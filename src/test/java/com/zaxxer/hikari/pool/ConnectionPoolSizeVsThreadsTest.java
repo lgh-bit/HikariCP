@@ -99,8 +99,8 @@ public class ConnectionPoolSizeVsThreadsTest {
                   minIdle, maxPoolSize, threadCount, workTimeMs, restTimeMs, connectionAcquisitionTimeMs, iterations, postTestTimeMs);
 
       final HikariConfig config = newHikariConfig();
-      config.setMinimumIdle(minIdle);
-      config.setMaximumPoolSize(maxPoolSize);
+      config.setMinimumIdle(minIdle); //2
+      config.setMaximumPoolSize(maxPoolSize); //100
       config.setInitializationFailTimeout(Long.MAX_VALUE);
       config.setConnectionTimeout(2500);
       config.setDataSourceClassName("com.zaxxer.hikari.mocks.StubDataSource");
@@ -111,16 +111,16 @@ public class ConnectionPoolSizeVsThreadsTest {
       try (final HikariDataSource ds = new HikariDataSource(config)) {
          final StubDataSource stubDataSource = ds.unwrap(StubDataSource.class);
          // connection acquisition takes more than 0 ms in a real system
-         stubDataSource.setConnectionAcquistionTime(connectionAcquisitionTimeMs);
+         stubDataSource.setConnectionAcquistionTime(connectionAcquisitionTimeMs); //250
 
-         final ExecutorService threadPool = newFixedThreadPool(threadCount);
-         final CountDownLatch allThreadsDone = new CountDownLatch(iterations);
+         final ExecutorService threadPool = newFixedThreadPool(threadCount); //50
+         final CountDownLatch allThreadsDone = new CountDownLatch(iterations); //5000
          for (int i = 0; i < iterations; i++) {
             threadPool.submit(() -> {
                if (ref.get() == null) {
-                  quietlySleep(restTimeMs);
+                  quietlySleep(restTimeMs); //0
                   try (Connection c2 = ds.getConnection()) {
-                     quietlySleep(workTimeMs);
+                     quietlySleep(workTimeMs); //0
                   }
                   catch (Exception e) {
                      ref.set(e);
@@ -137,11 +137,13 @@ public class ConnectionPoolSizeVsThreadsTest {
          while (allThreadsDone.getCount() > 0 || pool.getTotalConnections() < minIdle) {
             quietlySleep(50);
             underLoad.updateMaxCounts(pool);
+            LOGGER.info("Under Load... {}", underLoad);
+            pool.logPoolState("test1: ");
          }
-
+         LOGGER.warn("allThreadsDone.getCount():{}", allThreadsDone.getCount());
          // wait for long enough any pending acquisitions have already been done
-         LOGGER.info("Test Over, waiting for post delay time {}ms ", postTestTimeMs);
-         quietlySleep(connectionAcquisitionTimeMs + workTimeMs + restTimeMs);
+         LOGGER.info("Test Over, waiting for post delay time {}ms ", postTestTimeMs); //3000ms
+         quietlySleep(connectionAcquisitionTimeMs + workTimeMs + restTimeMs); //250
 
          // collect pool data while there is no work to do.
          final Counts postLoad = new Counts();

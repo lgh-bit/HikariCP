@@ -40,11 +40,11 @@ public class ConcurrentCloseConnectionTest
    @Test
    public void testConcurrentClose() throws Exception
    {
-	  HikariConfig config = newHikariConfig();
+	   HikariConfig config = newHikariConfig();
       config.setDataSourceClassName("com.zaxxer.hikari.mocks.StubDataSource");
 
-	  try (HikariDataSource ds = new HikariDataSource(config);
-	      final Connection connection = ds.getConnection()) {
+	   try (HikariDataSource ds = new HikariDataSource(config);
+           final Connection connection = ds.getConnection()) {
 
 		  ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -53,14 +53,14 @@ public class ConcurrentCloseConnectionTest
 		  for (int i = 0; i < 500; i++) {
 			  final PreparedStatement preparedStatement =
 				  connection.prepareStatement("");
-
-			  futures.add(executorService.submit(new Callable<Void>() {
+           int t = i;
+			  futures.add(executorService.submit(new Callable<Integer>() {
 
 				  @Override
-				  public Void call() throws Exception {
+				  public Integer call() throws Exception {
 					  preparedStatement.close();
 
-					  return null;
+					  return t;
 				  }
 
 			  }));
@@ -69,7 +69,7 @@ public class ConcurrentCloseConnectionTest
 		  executorService.shutdown();
 
 		  for (Future<?> future : futures) {
-			  future.get();
+           System.out.println(future.get());
 		  }
 	  }
    }

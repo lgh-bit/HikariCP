@@ -16,8 +16,7 @@
 
 package com.zaxxer.hikari.pool;
 
-import static com.zaxxer.hikari.pool.TestElf.newHikariConfig;
-import static com.zaxxer.hikari.pool.TestElf.getPool;
+import static com.zaxxer.hikari.pool.TestElf.*;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +28,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,6 +61,8 @@ public class ExceptionTest
    @Test
    public void testException1() throws SQLException
    {
+      HikariPool pool = getPool(ds);
+      pool.logPoolStateInfo("test: ");
       try (Connection connection = ds.getConnection()) {
          assertNotNull(connection);
 
@@ -79,7 +81,8 @@ public class ExceptionTest
          }
       }
 
-      HikariPool pool = getPool(ds);
+      setSlf4jLogLevel(this.getClass(), Level.DEBUG);
+      pool.logPoolStateInfo("test: ");
       assertTrue("Total (3) connections not as expected", pool.getTotalConnections() >= 0);
       assertTrue("Idle (3) connections not as expected", pool.getIdleConnections() >= 0);
    }
