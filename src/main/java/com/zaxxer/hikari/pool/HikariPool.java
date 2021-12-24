@@ -527,9 +527,12 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
     */
    private synchronized void fillPool()
    {
+      // 假设最大连接数为10，最小连接数5，已创建2个，在创建中是0个，空闲的2个,则: needAdd = Math.min(10 - 2, 5 - 2) - 0 = 3;
       final int connectionsToAdd = Math.min(config.getMaximumPoolSize() - getTotalConnections(), config.getMinimumIdle() - getIdleConnections())
                                    - addConnectionQueue.size();
       for (int i = 0; i < connectionsToAdd; i++) {
+         // 在[0,connectionsToAdd - 1)以内为了满足最小连接数的创建的连接属于"创建"，
+         // 在[connectionsToAdd - 1,connectionsToAdd]为了满足竞争激烈的时候创建的连接属于"添加"
          addConnectionExecutor.submit((i < connectionsToAdd - 1) ? poolEntryCreator : postFillPoolEntryCreator);
       }
    }
